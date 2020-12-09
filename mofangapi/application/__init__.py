@@ -1,4 +1,4 @@
-import os
+import os, sys
 
 from flask import Flask
 from flask_script import Manager
@@ -8,6 +8,10 @@ from flask_session import Session
 from flask_migrate import Migrate, MigrateCommand
 from flask_jsonrpc import JSONRPC
 from flask_marshmallow import Marshmallow
+from flask_jwt_extended import JWTManager
+from flask_admin import Admin
+from flask_babelex import Babel
+from faker import Faker
 
 from application.utils.config import load_config
 from application.utils.session import init_session
@@ -39,6 +43,14 @@ jsonrpc = JSONRPC(service_url='/api')  # service_url是api接口的url地址前�
 # 创建数据转换器对象
 ma = Marshmallow()
 
+# jwt认证模块实例化
+jwt = JWTManager()
+
+# flask-admin模块初始化
+admin = Admin()
+
+babel = Babel()
+
 
 def init_app(config_path):
     """全局初始化"""
@@ -47,7 +59,7 @@ def init_app(config_path):
     # 导入配置文件
     # mofang
     # 设置项目根目录
-    import sys
+
     # app.BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
     app.BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -57,7 +69,7 @@ def init_app(config_path):
     sys.path.insert(0,os.path.join(app.BASE_DIR, 'apps'))
 
     # 加载导包路径
-    sys.path.insert(0, os.path.join(app.BASE_DIR, "utils/language"))
+    sys.path.insert(0, os.path.join(app.BASE_DIR, "application/utils/language"))
 
 
     # 加载项目配置
@@ -66,6 +78,7 @@ def init_app(config_path):
 
     # 数据库初始化
     db.init_app(app)
+    app.db = db
     redis.init_app(app)
 
     # 数据转化器的初始化
@@ -92,10 +105,24 @@ def init_app(config_path):
     jsonrpc.service_url = "/api"  # api接口的url地址前缀
     jsonrpc.init_app(app)
 
+    # jwt初始化
+    jwt.init_app(app)
+
+    # admin站点
+    admin.init_app(app)
+
+    # 项目语言 国际化本地化模块的初始化
+    babel.init_app(app)
+
     # 初始化引入终端脚本工具
     manager.app = app
 
+    # 数据种子生成器[faker]
+    app.faker = Faker(app.config.get("LANGUAGE"))
+
     # 注册自定义命令
     load_command(manager)
+
+
 
     return manager

@@ -51,3 +51,34 @@ class Config(InitConfig):
         # "users",
         # "marsh",
     ]
+
+    # 短信相关配置
+    SMS_ACCOUNT_ID = "8a216da863f8e6c20164139687e80c1b"  # 接口主账号
+    SMS_ACCOUNT_TOKEN = "6dd01b2b60104b3dbc88b2b74158bac6"  # 认证token令牌
+    SMS_APP_ID = "8a216da863f8e6c20164139688400c21"  # 应用ID
+    SMS_TEMPLATE_ID = 1  # 短信模板ID
+    SMS_EXPIRE_TIME = 60 * 5  # 短信有效时间，单位:秒/s
+    SMS_INTERVAL_TIME = 60  # 短信发送冷却时间，单位:秒/s
+
+    # jwt 相关配置
+    # 加密算法,默认: HS256
+    JWT_ALGORITHM = "HS256"
+    # 秘钥，默认是flask配置中的SECRET_KEY
+    JWT_SECRET_KEY = "y58Rsqzmts6VCBRHes1Sf2DHdGJaGqPMi6GYpBS4CKyCdi42KLSs9TQVTauZMLMw"
+    # token令牌有效期，单位: 秒/s，默认:　datetime.timedelta(minutes=15) 或者 15 * 60
+    JWT_ACCESS_TOKEN_EXPIRES = 60*60
+    # refresh刷新令牌有效期，单位: 秒/s，默认：datetime.timedelta(days=30) 或者 30*24*60*60
+    JWT_REFRESH_TOKEN_EXPIRES = 30 * 24 * 60 * 60
+    # 设置通过哪种方式传递jwt，默认是http请求头，也可以是query_string，json，cookies
+    JWT_TOKEN_LOCATION = ["headers","query_string"]
+    # 当通过http请求头传递jwt时，请求头参数名称设置，默认值： Authorization
+    JWT_HEADER_NAME = "Authorization"
+    # 当通过查询字符串传递jwt时，查询字符串的参数名称设置，默认：jwt
+    JWT_QUERY_STRING_NAME = "token"
+    # 当通过http请求头传递jwt时，令牌的前缀。
+    # 默认值为 "Bearer"，例如：Authorization: Bearer <JWT>
+    JWT_HEADER_TYPE = "jwt"
+
+    CAPTCHA_GATEWAY = "https://ssl.captcha.qq.com/ticket/verify"
+    CAPTCHA_APP_ID = "2071340228"
+    CAPTCHA_APP_SECRET_KEY = "0v714N6pMtV587ymedaJM2w**"

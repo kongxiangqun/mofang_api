@@ -15,6 +15,13 @@ def include(url_prefix, blueprint_path):
 def init_blueprint(app):
     """自动注册蓝图"""
     blueprint_path_list = app.config.get('INSTALLED_APPS')
+
+    # 加载admin站点总配置文件
+    try:
+        import_module(app.config.get("ADMIN_PATH"))
+    except:
+        pass
+
     for blueprint_path in blueprint_path_list:
         blueprint_name = blueprint_path.split('.')[-1]
         # 自动创建蓝图对象
@@ -39,6 +46,12 @@ def init_blueprint(app):
 
         # 注册模型
         import_module(blueprint_path + '.models')
+
+        # 加载蓝图内部的admin站点配置
+        try:
+            import_module(blueprint_path + ".admin")
+        except:
+            pass
 
         # 注册蓝图对象到app应用对象中
         app.register_blueprint(blueprint, url_prefix=url_prefix)
