@@ -60,7 +60,7 @@ class Config(InitConfig):
     SMS_EXPIRE_TIME = 60 * 5  # 短信有效时间，单位:秒/s
     SMS_INTERVAL_TIME = 60  # 短信发送冷却时间，单位:秒/s
 
-    # jwt 相关配置
+    # jwt 相关配置 
     # 加密算法,默认: HS256
     JWT_ALGORITHM = "HS256"
     # 秘钥，默认是flask配置中的SECRET_KEY
@@ -80,8 +80,8 @@ class Config(InitConfig):
     JWT_HEADER_TYPE = "jwt"
 
     CAPTCHA_GATEWAY = "https://ssl.captcha.qq.com/ticket/verify"
-    CAPTCHA_APP_ID = "2071340228"
-    CAPTCHA_APP_SECRET_KEY = "0v714N6pMtV587ymedaJM2w**"
+    CAPTCHA_APP_ID = "2075636321"
+    CAPTCHA_APP_SECRET_KEY = "0HdwChGQv8cKuwNo2ODxnFA**"
 
     # mongoDB 配置信息
     MONGO_URI = "mongodb://127.0.0.1:27017/mofang"
