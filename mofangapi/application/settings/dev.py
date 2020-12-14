@@ -53,9 +53,9 @@ class Config(InitConfig):
     ]
 
     # 短信相关配置
-    SMS_ACCOUNT_ID = "8a216da863f8e6c20164139687e80c1b"  # 接口主账号
-    SMS_ACCOUNT_TOKEN = "6dd01b2b60104b3dbc88b2b74158bac6"  # 认证token令牌
-    SMS_APP_ID = "8a216da863f8e6c20164139688400c21"  # 应用ID
+    SMS_ACCOUNT_ID = "8a216da8754a45d5017564dc514207fe"  # 接口主账号
+    SMS_ACCOUNT_TOKEN = "759a69dae5134080b26cd1869069e410"  # 认证token令牌
+    SMS_APP_ID = "8a216da8754a45d5017564dc52250804"  # 应用ID
     SMS_TEMPLATE_ID = 1  # 短信模板ID
     SMS_EXPIRE_TIME = 60 * 5  # 短信有效时间，单位:秒/s
     SMS_INTERVAL_TIME = 60  # 短信发送冷却时间，单位:秒/s
@@ -82,3 +82,6 @@ class Config(InitConfig):
     CAPTCHA_GATEWAY = "https://ssl.captcha.qq.com/ticket/verify"
     CAPTCHA_APP_ID = "2071340228"
     CAPTCHA_APP_SECRET_KEY = "0v714N6pMtV587ymedaJM2w**"
+
+    # mongoDB 配置信息
+    MONGO_URI = "mongodb://127.0.0.1:27017/mofang"

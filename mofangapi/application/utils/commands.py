@@ -10,13 +10,18 @@ def load_command(manager, command_path=None):
         command_path = 'application.utils.commands'
     module = import_module(command_path)
     class_list = inspect.getmembers(module, inspect.isclass)
-    print("************")
-    print("inspect.getmembers class_list", class_list)
-    print("************")
+    print("************ inspect.getmembers class_list")
+    print(class_list)
+    print("-------------------------------------------")
     for class_item in class_list:  # class_item是一个元组
+        print("----------------")
+        print(class_item[1])
+        print(issubclass(class_item[1], Command))
+        print("----------------")
+
         if issubclass(class_item[1], Command) and class_item[0] != 'Command':
             manager.add_command(class_item[1].name, class_item[1])
-
+    print("************ inspect.getmembers class_list")
 
 class BlueprintCommand(Command):
     """蓝图生成命令"""
@@ -89,7 +94,7 @@ class CreateUserCommand(Command):
                     nickname=nickname,
                     sex=sex,
                     name=name,
-                    password=name,
+                    password=password,
                     money=random.randint(100, 99999),
                     ip_address=faker.ipv4_public(),
                     email=faker.ascii_free_email(),

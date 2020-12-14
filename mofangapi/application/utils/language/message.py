@@ -23,5 +23,10 @@ class ErrorMessage():
 
     avatar_save_success = "用户头像保存成功！"
 
+    transaction_password_not_match = "交易密码和确认密码不一致！"
+    transaction_password_error = "原交易密码输入有误！"
+
+    old_new_password_match = "原密码与新密码一致！无需修改"
+
 
 

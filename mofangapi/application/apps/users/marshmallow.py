@@ -52,6 +52,7 @@ class UserSchema(SQLAlchemyAutoSchema):
     def validate(self, data, **kwargs):
         # 校验密码和确认密码
         if data["password"] != data["password2"]:
+            print("密码和确认密码错误")
             raise ValidationError(message=Message.password_not_match, fields_name="password")
 
         # todo 校验短信验证码
@@ -59,12 +60,14 @@ class UserSchema(SQLAlchemyAutoSchema):
         redis_sms_code = redis.get("sms_%s" % (data["mobile"]))
         # 如果从redis_sms_code 没取到值返回错误信息
         if redis_sms_code is None:
+            print("redis验证码为空错误")
             raise ValidationError(massage=Message.sms_code_expired, field_name="sms_code")
         redis_sms_code = redis_sms_code.decode()
         # 2. 从客户端提交的数据data中提取验证码
         sms_code = data["sms_code"]
         # 3. 字符串比较,如果失败,抛出异常,否则,直接删除验证码
         if sms_code != redis_sms_code:
+            print("验证码校验错误")
             raise ValidationError(message=Message.sms_code_error, field_name="sms_code")
         redis.delete("sms_%s" % (data["mobile"]))
         # print(data["sms_code"])

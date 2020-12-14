@@ -1,8 +1,8 @@
-"""users table
+"""add user tansaction password
 
-Revision ID: 575c82e4557f
+Revision ID: 8b2c6d6ba374
 Revises: 
-Create Date: 2020-12-01 15:02:27.000270
+Create Date: 2020-12-11 20:58:19.412745
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '575c82e4557f'
+revision = '8b2c6d6ba374'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -26,8 +26,9 @@ def upgrade():
     sa.Column('created_time', sa.DateTime(), nullable=True, comment='创建时间'),
     sa.Column('updated_time', sa.DateTime(), nullable=True, comment='更新时间'),
     sa.Column('name', sa.String(length=255), nullable=True, comment='用户账户'),
-    sa.Column('nickname', sa.String(length=255), nullable=True, comment='用户昵称'),
     sa.Column('_password', sa.String(length=255), nullable=True, comment='登录密码'),
+    sa.Column('_transaction_password', sa.String(length=255), nullable=True, comment='交易密码'),
+    sa.Column('nickname', sa.String(length=255), nullable=True, comment='用户昵称'),
     sa.Column('age', sa.SmallInteger(), nullable=True, comment='年龄'),
     sa.Column('money', sa.Numeric(precision=7, scale=2), nullable=True, comment='账户余额'),
     sa.Column('ip_address', sa.String(length=255), nullable=True, comment='登录IP'),

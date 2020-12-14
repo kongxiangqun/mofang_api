@@ -14,3 +14,7 @@ class APIStatus():
     CODE_PASSWORD_ERROR = 1009  # 密码错误
 
     CODE_CAPTCHA_ERROR = 1010  # 验证码验证失败
+
+    CODE_TRANSACTION_PASSWORD_ERROR = 1011  # 交易密码和确认密码不一致
+
+    CODE_OLD_NEW_PASSWORD_MATCH = 1012 # 原密码与新密码一致

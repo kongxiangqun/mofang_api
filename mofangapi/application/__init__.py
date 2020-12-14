@@ -12,6 +12,7 @@ from flask_jwt_extended import JWTManager
 from flask_admin import Admin
 from flask_babelex import Babel
 from faker import Faker
+from flask_pymongo import PyMongo
 
 from application.utils.config import load_config
 from application.utils.session import init_session
@@ -49,8 +50,11 @@ jwt = JWTManager()
 # flask-admin模块初始化
 admin = Admin()
 
+# flask-babelex模块实例化
 babel = Babel()
 
+# mongoDB
+mongo = PyMongo()
 
 def init_app(config_path):
     """全局初始化"""
@@ -80,6 +84,7 @@ def init_app(config_path):
     db.init_app(app)
     app.db = db
     redis.init_app(app)
+    mongo.init_app(app)
 
     # 数据转化器的初始化
     ma.init_app(app)
