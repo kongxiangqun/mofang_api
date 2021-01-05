@@ -13,6 +13,9 @@ from flask_admin import Admin
 from flask_babelex import Babel
 from faker import Faker
 from flask_pymongo import PyMongo
+from flask_qrcode import QRcode
+from flask_socketio import SocketIO
+from flask_cors import CORS
 
 from application.utils.config import load_config
 from application.utils.session import init_session
@@ -55,6 +58,15 @@ babel = Babel()
 
 # mongoDB
 mongo = PyMongo()
+
+# qrcode
+QRCode = QRcode()
+
+# socketio
+socketio = SocketIO()
+
+# flask_cors
+cors = CORS()
 
 def init_app(config_path):
     """全局初始化"""
@@ -124,6 +136,19 @@ def init_app(config_path):
 
     # 数据种子生成器[faker]
     app.faker = Faker(app.config.get("LANGUAGE"))
+
+    # qrcode初始化配置
+    QRCode.init_app(app)
+
+    # cors
+    cors.init_app(app, resources={r"/api/*": {"origins": "*"}})
+
+    # socketio
+    socketio.init_app(app, cors_allowed_origins=app.config["CORS_ALLOWED_ORIGINS"], async_mode=app.config["ASYNC_MODE"],
+                      debug=app.config["DEBUG"])
+    # 改写runserver命令
+    if sys.argv[1] == "runserver":
+        manager.add_command("run", socketio.run(app, host=app.config["HOST"], port=app.config["PORT"]))
 
     # 注册自定义命令
     load_command(manager)

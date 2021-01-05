@@ -2,9 +2,9 @@ from flask import Blueprint
 from importlib import import_module
 
 
-def path(rule, func_view):
+def path(rule, func_view, **kwargs):
     # 把蓝图下视图和路由之间的映射关系处理成字典结构,方便后面注册蓝图的时候直接传参
-    return {'rule': rule, 'view_func': func_view}
+    return {'rule': rule, 'view_func': func_view, **kwargs}
 
 
 def include(url_prefix, blueprint_path):
@@ -50,6 +50,12 @@ def init_blueprint(app):
         # 加载蓝图内部的admin站点配置
         try:
             import_module(blueprint_path + ".admin")
+        except:
+            pass
+
+        # 加载蓝图内部的socket接口
+        try:
+            import_module(blueprint_path + ".socket")
         except:
             pass
 

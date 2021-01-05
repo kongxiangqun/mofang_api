@@ -47,6 +47,7 @@ class Config(InitConfig):
         'application.apps.home',
         'application.apps.users',
         'application.apps.marsh',
+        "application.apps.orchard",
         # "home",
         # "users",
         # "marsh",
@@ -85,3 +86,19 @@ class Config(InitConfig):
 
     # mongoDB 配置信息
     MONGO_URI = "mongodb://127.0.0.1:27017/mofang"
+
+    # 用户默认头像
+    DEFAULT_AVATAR = "89c351cd-4a6b-46ce-8289-954edd0324f0.jpeg"
+
+    # socketio
+    CORS_ALLOWED_ORIGINS = "*"
+    ASYNC_MODE = None
+    HOST = "0.0.0.0"
+    PORT = 5000
+
+    # 支付宝配置信息
+    ALIPAY_APP_ID = "2016110100783796"
+    ALIPAY_SIGN_TYPE = "RSA2"
+    ALIPAY_NOTIFY_URL = "https://example.com/notify"
+    ALIPAY_SANDBOX = True
+

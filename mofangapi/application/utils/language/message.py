@@ -28,5 +28,22 @@ class ErrorMessage():
 
     old_new_password_match = "原密码与新密码一致！无需修改"
 
+    receive_user_not_exists = "搜索的用户不存在！"
+
+    update_user_relation_fail = "好友申请处理失败！"
+    update_success = "好友申请处理成功！"
+
+    recharge_not_exists = "充值记录不存在！"
+
+    money_no_enough = "余额不足！"
+
+    pet_not_empty = "没有空余的宠物位置"
+    not_such_pet = "没有该宠物"
+
+    no_package = "背包存储达到上限！"
+    credit_no_enough = "果子不足！"
+    prop_not_empty = "没有空余位置"
+    not_such_prop = "没有该道具"
+
 
 

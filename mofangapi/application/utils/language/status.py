@@ -17,4 +17,18 @@ class APIStatus():
 
     CODE_TRANSACTION_PASSWORD_ERROR = 1011  # 交易密码和确认密码不一致
 
-    CODE_OLD_NEW_PASSWORD_MATCH = 1012 # 原密码与新密码一致
+    # CODE_OLD_NEW_PASSWORD_MATCH = 1012 # 原密码与新密码一致
+    CODE_OLD_NEW_PASSWORD_MATCH = 1030  # 原密码与新密码一致
+
+    CODE_UPDATE_USER_RELATION_ERROR = 1012  # 更新用户好友申请状态失败
+
+    CODE_RECHARGE_ERROR = 1013  # 充值发生错误
+
+    CODE_NO_MONEY = 1014  # 余额不足
+
+    CODE_NO_PACKAGE = 1015  # 背包存储达到上限
+    CODE_NO_CREDIT = 1016  # 果子不足
+    CODE_NO_EMPTY = 1017  # 没有空余的栏位
+    CODE_NO_SUCH_PROP = 1018  # 没有该道具
+
+

@@ -11,10 +11,31 @@ import re,random,json
 from status import APIStatus as status
 from message import ErrorMessage as message
 from ronglian_sms_sdk import SmsSDK
-from flask import current_app
+import requests
+from flask import current_app,request
 from application import redis
 @jsonrpc.method(name="Home.sms")
-def sms(mobile):
+def sms(mobile,ticket=None,randstr=None):
+    if ticket is not None or randstr is not None:
+        # 校验防水墙验证码
+        params = {
+            "aid": current_app.config.get("CAPTCHA_APP_ID"),
+            "AppSecretKey": current_app.config.get("CAPTCHA_APP_SECRET_KEY"),
+            "Ticket": ticket,
+            "Randstr": randstr,
+            "UserIP": request.remote_addr
+        }
+        # 把字典数据转换成地址栏的查询字符串格式
+        url = current_app.config.get("CAPTCHA_GATEWAY")
+        res = requests.get(url,params=params).json()
+        # 发送http的get请求
+        # https://ssl.captcha.qq.com/ticket/verify?aid=xxx&AppSecretKey=xxx&xxxxx
+
+        if int(res.get("response")) != 1:
+            # 验证失败
+            return {"errno": status.CODE_CAPTCHA_ERROR, "errmsg": message.captcaht_no_match}
+
+
     """发送短信验证码"""
     # 验证手机
     if not re.match("^1[3-9]\d{9}$",mobile):
