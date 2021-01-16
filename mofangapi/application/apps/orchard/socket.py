@@ -173,6 +173,7 @@ def user_login(data):
                 if interval_time==-2:
                     shears+=1
             key+=1
+
     message = {
         "errno":status.CODE_OK,
         "errmsg":errmsg.ok,
@@ -187,7 +188,6 @@ def user_login(data):
         "waters":waters,
         "shears":shears,
     }
-    print(message)
     socketio.emit("login_response", message, namespace="/mofang", room=room)
 
 def get_package_prop_list(user_dict):
@@ -425,11 +425,27 @@ def pet_show():
     ]
     """
     # 从redis中提取当前宠物的饱食度和有效期
+    # 初始化宠物的生命周期
+    pet_hp_max = 10000
     for key,pet in enumerate(pet_list):
-        pet["hp"] = math.ceil( redis.ttl("pet_%s_%s_hp" % (user.id,key+1)) / 86400 * 100 )
+        setting = Setting.query.filter(Setting.name == "pet_hp_max_%s" % pet["pid"]).first()
+        if setting is None:
+            pet_hp_max = 7200
+        else:
+            pet_hp_max = int(setting.value)
+        pet["hp"] = math.ceil( redis.ttl("pet_%s_%s_hp" % (user.id,key+1)) / pet_hp_max * 100 )
         pet["has_time"] = redis.ttl("pet_%s_%s_expire" % (user.id,key+1))
+        pet["hp_time"] = redis.ttl("pet_%s_%s_hp" % (user.id,key+1))
+        pet["pet_hp_max"] = pet_hp_max
+        # 在饱食度低于0时，给当前宠物进行标记
+        if pet["hp"] <=0:
+            pet["is_die"] = 1
+            redis.delete("pet_%s_%s_expire" % (user.id,key+1))
+
+    mongo.db.user_info_list.update_one({"sid":room},{"$set":{"pet_list":pet_list}})
 
     pet_number = user_info.get("pet_number", 1)
+    print(pet_list)
     socketio.emit(
         "pet_show_response",
         {
@@ -444,8 +460,10 @@ def pet_show():
 
 from datetime import datetime
 @socketio.on("use_prop", namespace="/mofang")
-def use_prop(pid):
+def use_prop(data):
     """使用道具"""
+    pid = data.get("pid")
+    pet_key = data.get("pet_key",0)
     room = request.sid
     # 获取mongo中的用户信息
     user_info = mongo.db.user_info_list.find_one({"sid": request.sid})
@@ -485,6 +503,7 @@ def use_prop(pid):
             { # 植物状态
                 "time": int(datetime.now().timestamp()), # 种植时间
                 "status": 2, # 植物状态，2表示幼苗状态
+                "allow_water": False, # 是否允许浇水
                 "waters": 0, # 浇水次数
                 "shears": 0, # 使用剪刀次数
             }
@@ -509,6 +528,8 @@ def use_prop(pid):
         pipe.setex("user_tree_growup_%s_%s" % (user.id,len(tree_list)),tree_growup_time, "_")
         pipe.execute()
 
+        # 设置定时任务进行浇水
+        redis.append("tree_list_water","%s_%s," % (user.id,len(tree_list)))
         user_login({"uid": user.id})
 
     if int(prop_data.prop_type) == 1:
@@ -516,13 +537,25 @@ def use_prop(pid):
         # 1. 判断当前的宠物数量
         # 获取宠物列表
         pet_list = user_info.get("pet_list", [])
-        if len(pet_list) > 1:
+        if len(pet_list) > 1 and pet_list[0]['is_die'] == 0 and pet_list[1]['is_die'] == 0:
             socketio.emit("pet_use_response", {"errno":status.CODE_NO_EMPTY,"errmsg":errmsg.pet_not_empty}, namespace="/mofang", room=room)
             return
 
         # 2. 是否有空余的宠物栏位
         pet_number = user_info.get("pet_number",1)
-        if pet_number <= len(pet_list):
+        length = len(pet_list)
+
+        if length == 2:
+            live_leng = 0
+            if pet_list[0]['is_die'] == 0:
+                live_leng += 1
+            if pet_list[1]['is_die'] == 0:
+                live_leng += 1
+        elif length == 1 and pet_list[0]['is_die'] == 0:
+            live_leng = 1
+        else:
+            live_leng = 0
+        if  live_leng >= pet_number:
             socketio.emit("pet_use_response", {"errno":status.CODE_NO_EMPTY,"errmsg":errmsg.pet_not_empty}, namespace="/mofang", room=room)
             return
 
@@ -545,29 +578,95 @@ def use_prop(pid):
         # 在redis中设置当前宠物的饱食度
         pipe = redis.pipeline()
         pipe.multi()
-        pipe.setex("pet_%s_%s_hp" % (user.id, len(pet_list)+1), 24*60*60, "_")
-        pipe.setex("pet_%s_%s_expire" % (user.id, len(pet_list)+1), int(expire)*24*60*60, "_")
-        pipe.execute()
+        setting = Setting.query.filter(Setting.name == ("pet_hp_max_%s" % pid)).first()
+        if setting is None:
+            pet_hp_max = 7200
+        else:
+            pet_hp_max = int(setting.value)
 
         # 基本保存到mongo
-        mongo.db.user_info_list.update_one({"sid":request.sid},{"$push":{"pet_list":{
+        # 判断是否有挂了的宠物在列表中
+        pet_data = {
              "pid": pid,
              "image": prop_data.image,
              "created_time": int( datetime.now().timestamp() ),
              "skill": skill,
-          }}})
+             "is_die": 0,
+        }
 
-        """
-        db.user_info_list.updateOne({"_id":"52"},{"$push":{"pet_list":{
-                 "pid": 2,
-                 "image": "pet1.png",
-                 "created_time": 1609727155,
-                 "skill": 30,
-              }}})
-        """
+        # 如果第一个宠物是挂了的
+        if len(pet_list) == 0:
+            mongo.db.user_info_list.update_one({"sid":room},{"$set":{"pet_list":[pet_data]}})
 
+            pipe.setex("pet_%s_%s_hp" % (user.id, 1), pet_hp_max, "_")
+            pipe.setex("pet_%s_%s_expire" % (user.id, 1), int(expire) * 24 * 60 * 60, "_")
+        elif len(pet_list) == 1 and int(pet_list[0]["is_die"]) == 1:
+            """只有一个挂了的宠物"""
+            mongo.db.user_info_list.update_one({"sid":room},{"$set":{"pet_list":[pet_data]}})
+
+            pipe.setex("pet_%s_%s_hp" % (user.id, 1), pet_hp_max, "_")
+            pipe.setex("pet_%s_%s_expire" % (user.id, 1), int(expire) * 24 * 60 * 60, "_")
+
+        elif len(pet_list) == 1 and int(pet_list[0]["is_die"]) == 0:
+            """只有一个活着的宠物"""
+            mongo.db.user_info_list.update_one({"sid": room}, {"$push": {"pet_list": pet_data}})
+            pipe.setex("pet_%s_%s_hp" % (user.id, 2), pet_hp_max, "_")
+            pipe.setex("pet_%s_%s_expire" % (user.id, 2), int(expire) * 24 * 60 * 60, "_")
+        elif len(pet_list) == 2 and int(pet_list[0]["is_die"]) == 1:
+            """有2个宠物，但是第1个挂了"""
+            pet_list[0] = pet_data
+            mongo.db.user_info_list.update_one({"sid": room}, {"$set": {"pet_list": pet_list}})
+            pipe.setex("pet_%s_%s_hp" % (user.id, 1), pet_hp_max, "_")
+            pipe.setex("pet_%s_%s_expire" % (user.id, 1), int(expire) * 24 * 60 * 60, "_")
+        elif len(pet_list) == 2 and int(pet_list[1]["is_die"]) == 1:
+            """有2个宠物，但是第2个挂了"""
+            pet_list[1] = pet_data
+            pipe.setex("pet_%s_%s_hp" % (user.id, 2), pet_hp_max, "_")
+            pipe.setex("pet_%s_%s_expire" % (user.id, 2), int(expire) * 24 * 60 * 60, "_")
+            mongo.db.user_info_list.update_one({"sid": room}, {"$set": {"pet_list": pet_list}})
+
+        pipe.execute()
         pet_show()
 
+    if int(prop_data.prop_type) == 3:
+        """宠物喂食"""
+
+        pet_list = user_info.get("pet_list")
+        if len(pet_list) < 1:
+            socketio.emit("pet_use_response", {"errno": status.CODE_NO_PET, "errmsg": errmsg.not_pet},
+                          namespace="/mofang", room=room)
+            return
+
+        current_hp_time = redis.ttl("pet_%s_%s_hp" % (user.id,pet_key+1))
+        setting = Setting.query.filter(Setting.name== ("pet_hp_max_%s" % (pet_list[pet_key]["pid"]))).first()
+        if setting is None:
+            pet_hp_max = 7200
+        else:
+            pet_hp_max = int(setting.value)
+
+        current_pet_hp = math.ceil(current_hp_time / pet_hp_max * 100)
+
+        if current_pet_hp > 90:
+            """饱食度高于90%无法喂养"""
+            socketio.emit("pet_use_response", {"errno": status.CODE_NO_FEED, "errmsg": errmsg.no_feed},
+                          namespace="/mofang", room=room)
+            return
+
+        if current_pet_hp <= 0:
+            socketio.emit("pet_use_response", {"errno": status.CODE_NO_PET, "errmsg": errmsg.not_pet},
+                          namespace="/mofang", room=room)
+            return
+        setting = Setting.query.filter(Setting.name == "pet_feed_number").first()
+        if setting is None:
+            pet_feed_number = 0.1
+        else:
+            pet_feed_number = float(setting.value)
+        prop_time = pet_hp_max * pet_feed_number
+        time = int( current_hp_time + prop_time )
+
+        redis.expire("pet_%s_%s_hp" % (user.id,pet_key+1),time)
+        socketio.emit("pet_feed_response", {"errno": status.CODE_OK, "errmsg": errmsg.ok,"pet_key":pet_key,"hp_time":time},
+                      namespace="/mofang", room=room)
     # 扣除背包中的道具数量
     prop_list = user_info.get("prop_list",{})
     for key,value in prop_list.items():
@@ -637,5 +736,41 @@ def active_tree():
     socketio.emit("active_tree_response", {"errno": status.CODE_OK, "errmsg": errmsg.ok},
                   namespace="/mofang", room=room)
     return
+
+@socketio.on("water_tree", namespace="/mofang")
+def water_tree(key):
+    """浇水"""
+    room = request.sid
+    # 获取mongo中的用户信息
+    query = {"sid": request.sid}
+    user_info = mongo.db.user_info_list.find_one(query)
+    # 获取mysql中的用户信息
+    user = User.query.get(user_info.get("_id"))
+    if user is None:
+        socketio.emit("water_tree_response", {"errno": status.CODE_NO_USER, "errmsg": errmsg.user_not_exists},
+                      namespace="/mofang", room=room)
+        return
+
+    print("给%s的植物%s" % (user.id,key))
+    user_tree_list = user_info.get("user_tree_list",[])
+    try:
+        tree_data = user_tree_list[key]
+    except Exception as e:
+        socketio.emit("water_tree_response", {"errno": status.CODE_NO_SUCH_TREE, "errmsg": errmsg.tree_not_exists},
+                      namespace="/mofang", room=room)
+        return
+
+    if tree_data.get("allow_water",False) and int(tree_data.get("waters",1)) == 0:
+        """允许浇水"""
+        tree_data["waters"] = 1
+        # 如果种植物的种植时间达到成长期，则修改种植物的成长状态
+        growup = redis.ttl("user_tree_growup_%s_%s" % (user.id,key))
+        if growup == -2:
+            tree_data["status"] = 3
+
+    mongo.db.user_info_list.update_one(query,{"$set":{"user_tree_list":user_tree_list}})
+    socketio.emit("water_tree_response", {"errno": status.CODE_OK, "errmsg": errmsg.ok},
+                  namespace="/mofang", room=room)
+    user_login({"uid": user.id})
 
 

@@ -48,6 +48,7 @@ class Config(InitConfig):
         'application.apps.users',
         'application.apps.marsh',
         "application.apps.orchard",
+        "application.apps.live",
         # "home",
         # "users",
         # "marsh",
